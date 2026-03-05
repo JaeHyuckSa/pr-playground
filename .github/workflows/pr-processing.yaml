@@ -39,11 +39,11 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
           # ----------------------------------------------------------------
           # Configurable: comma-separated list of acceptable Trac ticket
-          # queue names. Valid values (derived from Trac CSV fields):
+          # stage names. Valid values (derived from Trac CSV fields):
           #   "Needs Patch"      — accepted ticket, no patch submitted yet
           #   "Needs PR Review"  — patch exists, awaiting community review
           #   "Waiting on Author" — patch needs fixes from the author
           #   "Ready for Checkin" — approved, awaiting merger
           # ----------------------------------------------------------------
-          ACCEPTABLE_QUEUES: "Needs Patch,Needs PR Review,Waiting on Author"
+          ACCEPTABLE_STAGES: "Needs Patch,Needs PR Review,Waiting on Author"
         run: python .github/workflows/pr-processing/check_pr.py

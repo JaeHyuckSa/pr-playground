@@ -22,10 +22,10 @@ GITHUB_TOKEN = os.environ["GITHUB_TOKEN"]
 REPO = os.environ["REPO"]
 PR_NUMBER = os.environ["PR_NUMBER"]
 PR_BODY = os.environ.get("PR_BODY", "")
-ACCEPTABLE_QUEUES = [
+ACCEPTABLE_STAGES = [
     q.strip()
     for q in os.environ.get(
-        "ACCEPTABLE_QUEUES", "Needs Patch,Needs PR Review,Waiting on Author"
+        "ACCEPTABLE_STAGES", "Needs Patch,Needs PR Review,Waiting on Author"
     ).split(",")
 ]
 
@@ -72,11 +72,11 @@ def get_pr_files() -> list[str]:
     return files
 
 
-def compute_trac_queue(row: dict) -> str:
+def compute_trac_stage(row: dict) -> str:
     """
-    Derive the human-readable queue name from raw Trac CSV fields.
+    Derive the human-readable stage name from raw Trac CSV fields.
 
-    Django's triage docs describe three queues within the "Accepted" stage:
+    Django's triage docs describe three stages within the "Accepted" stage:
       Needs Patch       — stage=Accepted, has_patch=0
       Needs PR Review   — stage=Accepted, has_patch=1, no fix flags set
       Waiting on Author — stage=Accepted, has_patch=1, one or more fix flags set
@@ -125,11 +125,11 @@ def check_trac_ticket(pr_body: str, pr_files: list[str]) -> str | None:
     return load_message("no_trac_ticket.txt")
 
 
-def check_trac_status(pr_body: str, acceptable_queues: list[str]) -> str | None:
+def check_trac_status(pr_body: str, acceptable_stages: list[str]) -> str | None:
     """
-    Check 2: The referenced Trac ticket must be in an acceptable queue.
+    Check 2: The referenced Trac ticket must be in an acceptable stage.
 
-    Fetches ticket data via the public Trac CSV API and derives the queue
+    Fetches ticket data via the public Trac CSV API and derives the stage
     name from the stage + flag fields. Network errors are treated as
     non-fatal so that a Trac outage doesn't block all PRs.
     """
@@ -148,8 +148,8 @@ def check_trac_status(pr_body: str, acceptable_queues: list[str]) -> str | None:
             return load_message(
                 "invalid_trac_status.txt",
                 ticket_id=ticket_id,
-                queue="(ticket not found)",
-                acceptable_queues=", ".join(acceptable_queues),
+                stage="(ticket not found)",
+                acceptable_stages=", ".join(acceptable_stages),
             )
         print(
             f"Warning: HTTP {exc.code} fetching ticket {ticket_id} — skipping status check."
@@ -167,15 +167,15 @@ def check_trac_status(pr_body: str, acceptable_queues: list[str]) -> str | None:
         print(f"Warning: Empty CSV for ticket {ticket_id} — skipping status check.")
         return None
 
-    queue = compute_trac_queue(row)
-    if queue in acceptable_queues:
+    stage = compute_trac_stage(row)
+    if stage in acceptable_stages:
         return None
 
     return load_message(
         "invalid_trac_status.txt",
         ticket_id=ticket_id,
-        queue=queue,
-        acceptable_queues=", ".join(acceptable_queues),
+        stage=stage,
+        acceptable_stages=", ".join(acceptable_stages),
     )
 
 
@@ -268,7 +268,7 @@ def main() -> None:
 
     checks = [
         lambda: check_trac_ticket(PR_BODY, pr_files),
-        lambda: check_trac_status(PR_BODY, ACCEPTABLE_QUEUES),
+        lambda: check_trac_status(PR_BODY, ACCEPTABLE_STAGES),
         lambda: check_branch_description(PR_BODY),
         lambda: check_ai_disclosure(PR_BODY),
         lambda: check_checklist(PR_BODY),

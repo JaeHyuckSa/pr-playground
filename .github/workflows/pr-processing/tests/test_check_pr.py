@@ -15,7 +15,7 @@ import check_pr
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-ACCEPTABLE_QUEUES = ["Needs Patch", "Needs PR Review", "Waiting on Author"]
+ACCEPTABLE_STAGES = ["Needs Patch", "Needs PR Review", "Waiting on Author"]
 
 NON_DOCS_FILES = ["django/template/base.py", "tests/template_tests/test_base.py"]
 DOCS_ONLY_FILES = ["docs/topics/templates.txt", "docs/ref/templates/api.txt"]
@@ -150,10 +150,10 @@ def test_trac_ticket_various_lengths_pass(ticket):
     assert check_pr.check_trac_ticket(body, NON_DOCS_FILES) is None
 
 
-# ── compute_trac_queue ────────────────────────────────────────────────────────
+# ── compute_trac_stage ────────────────────────────────────────────────────────
 
 
-def _queue_row(stage, has_patch="0", needs_better_patch="0", needs_docs="0", needs_tests="0"):
+def _stage_row(stage, has_patch="0", needs_better_patch="0", needs_docs="0", needs_tests="0"):
     return {
         "stage": stage,
         "has_patch": has_patch,
@@ -163,36 +163,36 @@ def _queue_row(stage, has_patch="0", needs_better_patch="0", needs_docs="0", nee
     }
 
 
-def test_compute_queue_unreviewed():
-    assert check_pr.compute_trac_queue(_queue_row("Unreviewed")) == "Unreviewed"
+def test_compute_stage_unreviewed():
+    assert check_pr.compute_trac_stage(_stage_row("Unreviewed")) == "Unreviewed"
 
 
-def test_compute_queue_someday_maybe():
-    assert check_pr.compute_trac_queue(_queue_row("Someday/Maybe")) == "Someday/Maybe"
+def test_compute_stage_someday_maybe():
+    assert check_pr.compute_trac_stage(_stage_row("Someday/Maybe")) == "Someday/Maybe"
 
 
-def test_compute_queue_ready_for_checkin():
-    assert check_pr.compute_trac_queue(_queue_row("Ready for Checkin", has_patch="1")) == "Ready for Checkin"
+def test_compute_stage_ready_for_checkin():
+    assert check_pr.compute_trac_stage(_stage_row("Ready for Checkin", has_patch="1")) == "Ready for Checkin"
 
 
-def test_compute_queue_accepted_no_patch_is_needs_patch():
-    assert check_pr.compute_trac_queue(_queue_row("Accepted", has_patch="0")) == "Needs Patch"
+def test_compute_stage_accepted_no_patch_is_needs_patch():
+    assert check_pr.compute_trac_stage(_stage_row("Accepted", has_patch="0")) == "Needs Patch"
 
 
-def test_compute_queue_accepted_with_patch_no_flags_is_needs_review():
-    assert check_pr.compute_trac_queue(_queue_row("Accepted", has_patch="1")) == "Needs PR Review"
+def test_compute_stage_accepted_with_patch_no_flags_is_needs_review():
+    assert check_pr.compute_trac_stage(_stage_row("Accepted", has_patch="1")) == "Needs PR Review"
 
 
-def test_compute_queue_needs_better_patch_is_waiting_on_author():
-    assert check_pr.compute_trac_queue(_queue_row("Accepted", has_patch="1", needs_better_patch="1")) == "Waiting on Author"
+def test_compute_stage_needs_better_patch_is_waiting_on_author():
+    assert check_pr.compute_trac_stage(_stage_row("Accepted", has_patch="1", needs_better_patch="1")) == "Waiting on Author"
 
 
-def test_compute_queue_needs_docs_is_waiting_on_author():
-    assert check_pr.compute_trac_queue(_queue_row("Accepted", has_patch="1", needs_docs="1")) == "Waiting on Author"
+def test_compute_stage_needs_docs_is_waiting_on_author():
+    assert check_pr.compute_trac_stage(_stage_row("Accepted", has_patch="1", needs_docs="1")) == "Waiting on Author"
 
 
-def test_compute_queue_needs_tests_is_waiting_on_author():
-    assert check_pr.compute_trac_queue(_queue_row("Accepted", has_patch="1", needs_tests="1")) == "Waiting on Author"
+def test_compute_stage_needs_tests_is_waiting_on_author():
+    assert check_pr.compute_trac_stage(_stage_row("Accepted", has_patch="1", needs_tests="1")) == "Waiting on Author"
 
 
 # ── Check 2: Trac ticket status ───────────────────────────────────────────────
@@ -200,19 +200,19 @@ def test_compute_queue_needs_tests_is_waiting_on_author():
 
 def test_trac_status_no_ticket_skips_check():
     """If there is no ticket reference the status check is a no-op."""
-    assert check_pr.check_trac_status("No ticket here.", ACCEPTABLE_QUEUES) is None
+    assert check_pr.check_trac_status("No ticket here.", ACCEPTABLE_STAGES) is None
 
 
-@pytest.mark.parametrize("stage,has_patch,needs_better_patch,expected_queue", [
+@pytest.mark.parametrize("stage,has_patch,needs_better_patch,expected_stage", [
     ("Accepted", "0", "0", "Needs Patch"),
     ("Accepted", "1", "0", "Needs PR Review"),
     ("Accepted", "1", "1", "Waiting on Author"),
 ])
-def test_trac_status_acceptable_queues_pass(stage, has_patch, needs_better_patch, expected_queue):
+def test_trac_status_acceptable_stages_pass(stage, has_patch, needs_better_patch, expected_stage):
     csv_bytes = make_trac_csv(stage=stage, has_patch=has_patch, needs_better_patch=needs_better_patch)
     with patch("urllib.request.urlopen", mock_urlopen(csv_bytes)):
-        result = check_pr.check_trac_status("ticket-36969", ACCEPTABLE_QUEUES)
-    assert result is None, f"Expected {expected_queue} to pass but got a failure message"
+        result = check_pr.check_trac_status("ticket-36969", ACCEPTABLE_STAGES)
+    assert result is None, f"Expected {expected_stage} to pass but got a failure message"
 
 
 @pytest.mark.parametrize("stage,has_patch", [
@@ -220,31 +220,31 @@ def test_trac_status_acceptable_queues_pass(stage, has_patch, needs_better_patch
     ("Ready for Checkin", "1"),
     ("Someday/Maybe", "0"),
 ])
-def test_trac_status_unacceptable_queues_fail(stage, has_patch):
+def test_trac_status_unacceptable_stages_fail(stage, has_patch):
     csv_bytes = make_trac_csv(stage=stage, has_patch=has_patch)
     with patch("urllib.request.urlopen", mock_urlopen(csv_bytes)):
-        assert check_pr.check_trac_status("ticket-36969", ACCEPTABLE_QUEUES) is not None
+        assert check_pr.check_trac_status("ticket-36969", ACCEPTABLE_STAGES) is not None
 
 
 def test_trac_status_failure_message_contains_ticket_id():
     csv_bytes = make_trac_csv(ticket_id="12345", stage="Unreviewed", has_patch="0")
     with patch("urllib.request.urlopen", mock_urlopen(csv_bytes)):
-        result = check_pr.check_trac_status("ticket-12345", ACCEPTABLE_QUEUES)
+        result = check_pr.check_trac_status("ticket-12345", ACCEPTABLE_STAGES)
     assert "12345" in result
 
 
-def test_trac_status_failure_message_contains_current_queue():
+def test_trac_status_failure_message_contains_current_stage():
     csv_bytes = make_trac_csv(stage="Unreviewed", has_patch="0")
     with patch("urllib.request.urlopen", mock_urlopen(csv_bytes)):
-        result = check_pr.check_trac_status("ticket-36969", ACCEPTABLE_QUEUES)
+        result = check_pr.check_trac_status("ticket-36969", ACCEPTABLE_STAGES)
     assert "Unreviewed" in result
 
 
-def test_trac_status_failure_message_lists_acceptable_queues():
+def test_trac_status_failure_message_lists_acceptable_stages():
     csv_bytes = make_trac_csv(stage="Unreviewed", has_patch="0")
     with patch("urllib.request.urlopen", mock_urlopen(csv_bytes)):
-        result = check_pr.check_trac_status("ticket-36969", ACCEPTABLE_QUEUES)
-    for q in ACCEPTABLE_QUEUES:
+        result = check_pr.check_trac_status("ticket-36969", ACCEPTABLE_STAGES)
+    for q in ACCEPTABLE_STAGES:
         assert q in result
 
 
@@ -252,28 +252,28 @@ def test_trac_status_http_404_fails():
     """A 404 means the ticket doesn't exist — that is a failure."""
     error = urllib.error.HTTPError(url="", code=404, msg="Not Found", hdrs={}, fp=None)
     with patch("urllib.request.urlopen", side_effect=error):
-        assert check_pr.check_trac_status("ticket-99999", ACCEPTABLE_QUEUES) is not None
+        assert check_pr.check_trac_status("ticket-99999", ACCEPTABLE_STAGES) is not None
 
 
 def test_trac_status_network_error_skips_check():
     """A transient network error should not close valid PRs."""
     with patch("urllib.request.urlopen", side_effect=OSError("Connection refused")):
-        assert check_pr.check_trac_status("ticket-36969", ACCEPTABLE_QUEUES) is None
+        assert check_pr.check_trac_status("ticket-36969", ACCEPTABLE_STAGES) is None
 
 
 def test_trac_status_http_500_skips_check():
     """Trac server errors are treated as transient — skip the check."""
     error = urllib.error.HTTPError(url="", code=500, msg="Server Error", hdrs={}, fp=None)
     with patch("urllib.request.urlopen", side_effect=error):
-        assert check_pr.check_trac_status("ticket-36969", ACCEPTABLE_QUEUES) is None
+        assert check_pr.check_trac_status("ticket-36969", ACCEPTABLE_STAGES) is None
 
 
-def test_trac_status_custom_acceptable_queues():
-    """ACCEPTABLE_QUEUES is configurable — verify custom values are respected."""
+def test_trac_status_custom_acceptable_stages():
+    """ACCEPTABLE_STAGES is configurable — verify custom values are respected."""
     csv_bytes = make_trac_csv(stage="Ready for Checkin", has_patch="1")
     with patch("urllib.request.urlopen", mock_urlopen(csv_bytes)):
-        assert check_pr.check_trac_status("ticket-36969", ACCEPTABLE_QUEUES) is not None
-        assert check_pr.check_trac_status("ticket-36969", [*ACCEPTABLE_QUEUES, "Ready for Checkin"]) is None
+        assert check_pr.check_trac_status("ticket-36969", ACCEPTABLE_STAGES) is not None
+        assert check_pr.check_trac_status("ticket-36969", [*ACCEPTABLE_STAGES, "Ready for Checkin"]) is None
 
 
 # ── Check 3: Branch description ───────────────────────────────────────────────
@@ -423,7 +423,7 @@ def test_integration_fully_valid_pr_passes_all_checks():
     with patch("urllib.request.urlopen", mock_urlopen(csv_bytes)):
         results = [
             check_pr.check_trac_ticket(VALID_PR_BODY, NON_DOCS_FILES),
-            check_pr.check_trac_status(VALID_PR_BODY, ACCEPTABLE_QUEUES),
+            check_pr.check_trac_status(VALID_PR_BODY, ACCEPTABLE_STAGES),
             check_pr.check_branch_description(VALID_PR_BODY),
             check_pr.check_ai_disclosure(VALID_PR_BODY),
             check_pr.check_checklist(VALID_PR_BODY),
