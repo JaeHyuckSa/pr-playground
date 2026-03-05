@@ -1,0 +1,3 @@
+Thank you for your contribution to Django! Unfortunately, this pull request has been automatically closed because it does not meet one or more of our contribution requirements.
+
+Please review the issues listed below, address each one, and then reopen this PR. All items must be resolved before the PR can be accepted for review.

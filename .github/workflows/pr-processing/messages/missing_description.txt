@@ -1,0 +1,16 @@
+### Missing or Incomplete Branch Description
+
+The **Branch description** section of this PR is empty, still contains the placeholder text, or is too brief (fewer than 5 words).
+
+**What to do:**
+
+Replace the placeholder in the **Branch description** section with a meaningful summary that answers:
+
+- What problem does this PR solve?
+- Why is this change necessary?
+- What approach did you take?
+
+Your description must be **at least 5 words** and must not be the original placeholder text:
+> *Provide a concise overview of the issue or rationale behind the proposed changes.*
+
+A good description helps reviewers understand the intent of your change quickly and makes the PR much more likely to be reviewed promptly.

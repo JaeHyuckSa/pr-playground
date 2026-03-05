@@ -1,0 +1,21 @@
+### Missing or Invalid AI Assistance Disclosure
+
+The **AI Assistance Disclosure** section requires you to select **exactly one** of the two options by changing `[ ]` to `[x]`. Both options must not be checked, and neither option must be left unchecked.
+
+**What to do:**
+
+In the AI Assistance Disclosure section of the PR description, check exactly **one** of the following by changing `[ ]` to `[x]`:
+
+```
+- [x] **No AI tools were used** in preparing this PR.
+```
+
+**or**
+
+```
+- [x] **If AI tools were used**, I have disclosed which ones, and fully reviewed and verified their output.
+```
+
+Do not check both. Do not leave both unchecked.
+
+If you checked the second option, you must also add a description — see the separate note about that requirement.

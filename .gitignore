@@ -1,0 +1,6 @@
+.venv/
+venv/
+.envrc
+.local_env 
+CLAUDE.md 
+AGENTS.md
